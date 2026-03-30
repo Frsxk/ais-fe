@@ -1,15 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-slate-50 text-slate-900;
+  min-height: 100vh;
+  /* Soft ambient gradient background */
+  background: 
+    radial-gradient(at 0% 0%, rgba(224, 231, 255, 0.45) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.45) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(224, 231, 255, 0.45) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(243, 232, 255, 0.45) 0px, transparent 50%),
+    #f8fafc;
+  background-attachment: fixed;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)];
+  }
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-lg border border-white/50 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-all duration-300;
+  }
+  .glass-card:hover {
+    @apply shadow-[0_8px_32px_rgba(0,0,0,0.06)] -translate-y-1 bg-white/80;
   }
 }
