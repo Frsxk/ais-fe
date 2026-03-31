@@ -4,7 +4,7 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { BookOpen, GraduationCap, TrendingUp, Calendar as CalIcon } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Student Dashboard - Nusa AIS" }];
+  return [{ title: "Student Dashboard - AIS-NG" }];
 }
 
 const DASHBOARD_DATA = {

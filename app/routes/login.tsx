@@ -1,10 +1,9 @@
 import type { Route } from "./+types/login";
 import { Form, redirect } from "react-router";
 import { GlassPanel } from "../components/ui/GlassCard";
-import { GraduationCap } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Login - Nusa AIS" }];
+  return [{ title: "Login - AIS-NG" }];
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -22,8 +21,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <GlassPanel className="flex flex-col items-center">
-          <div className="bg-indigo-600 text-white p-3 rounded-2xl mb-6 shadow-lg shadow-indigo-600/20">
-            <GraduationCap size={32} className="stroke-[2]" />
+          <div className="bg-fuchsia-100 p-1.5 rounded-2xl mb-6 shadow-lg shadow-indigo-600/20 overflow-hidden">
+            <img src="/logo.png" alt="AIS Logo" className="w-12 h-12 object-contain rounded-xl" />
           </div>
           
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">Welcome Back</h1>

@@ -4,7 +4,7 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Users, FileText, CheckCircle, Clock } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Lecturer Dashboard - Nusa AIS" }];
+  return [{ title: "Lecturer Dashboard - AIS-NG" }];
 }
 
 export default function LecturerDashboard() {

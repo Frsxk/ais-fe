@@ -3,7 +3,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { GlassCard } from "../components/ui/GlassCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Schedule - Nusa AIS" }];
+  return [{ title: "Schedule - AIS-NG" }];
 }
 
 export default function StudentSchedule() {

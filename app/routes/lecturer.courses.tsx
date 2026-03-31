@@ -3,7 +3,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { GlassCard } from "../components/ui/GlassCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "My Courses - Nusa AIS" }];
+  return [{ title: "My Courses - AIS-NG" }];
 }
 
 const COURSES = [
