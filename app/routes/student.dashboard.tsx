@@ -2,10 +2,18 @@ import type { Route } from "./+types/student.dashboard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { GlassCard } from "../components/ui/GlassCard";
 import { BookOpen, GraduationCap, TrendingUp, Calendar as CalIcon } from "lucide-react";
+import { AVAILABLE_COURSES, formatHour } from "../data/courses";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Student Dashboard - AIS-NG" }];
 }
+
+const ENROLLED_IDS = ["CS301", "CS304", "CS306", "CS308"];
+const todayClasses = AVAILABLE_COURSES
+  .filter(c => ENROLLED_IDS.includes(c.id))
+  .flatMap(c => c.schedule.map(s => ({ ...c, slot: s })))
+  .filter(c => c.slot.day === "Mon")
+  .sort((a, b) => a.slot.startHour - b.slot.startHour);
 
 const DASHBOARD_DATA = {
   name: "Budi Santoso",
@@ -13,10 +21,6 @@ const DASHBOARD_DATA = {
   gpa: 3.84,
   credits: 114,
   semester: 6,
-  upcomingClasses: [
-    { id: 1, name: "Web Programming", time: "10:00 - 12:30", room: "Lab A1" },
-    { id: 2, name: "Software Architecture", time: "13:30 - 15:00", room: "Room 402" },
-  ]
 };
 
 export default function StudentDashboard() {
@@ -31,7 +35,7 @@ export default function StudentDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <GlassCard className="flex items-center gap-4">
-          <div className="bg-indigo-100 text-indigo-600 p-3 rounded-2xl flex-shrink-0">
+          <div className="bg-indigo-100 text-indigo-600 p-3 rounded-2xl shrink-0">
             <TrendingUp size={24} />
           </div>
           <div>
@@ -41,7 +45,7 @@ export default function StudentDashboard() {
         </GlassCard>
 
         <GlassCard className="flex items-center gap-4">
-          <div className="bg-fuchsia-100 text-fuchsia-600 p-3 rounded-2xl flex-shrink-0">
+          <div className="bg-fuchsia-100 text-fuchsia-600 p-3 rounded-2xl shrink-0">
             <BookOpen size={24} />
           </div>
           <div>
@@ -51,7 +55,7 @@ export default function StudentDashboard() {
         </GlassCard>
 
         <GlassCard className="flex items-center gap-4">
-          <div className="bg-sky-100 text-sky-600 p-3 rounded-2xl flex-shrink-0">
+          <div className="bg-sky-100 text-sky-600 p-3 rounded-2xl shrink-0">
             <GraduationCap size={24} />
           </div>
           <div>
@@ -67,15 +71,17 @@ export default function StudentDashboard() {
             <CalIcon size={20} className="text-indigo-500"/> Today's Schedule
           </h3>
           <div className="space-y-4">
-            {DASHBOARD_DATA.upcomingClasses.map((cls) => (
-              <div key={cls.id} className="p-4 rounded-xl border border-slate-200/50 bg-white/40 hover:bg-white/60 transition-colors flex items-center gap-4">
+            {todayClasses.length > 0 ? todayClasses.map((cls) => (
+              <div key={`${cls.id}-${cls.slot.startHour}`} className="p-4 rounded-xl border border-slate-200/50 bg-white/40 hover:bg-white/60 transition-colors flex items-center gap-4">
                 <div className="w-2 h-12 bg-indigo-500 rounded-full"></div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-800">{cls.name}</h4>
-                  <p className="text-sm text-slate-500">{cls.time} • {cls.room}</p>
+                  <p className="text-sm text-slate-500">{formatHour(cls.slot.startHour)}–{formatHour(cls.slot.endHour)} • {cls.room}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-sm text-slate-400 text-center py-4">No classes scheduled for today.</p>
+            )}
           </div>
         </GlassCard>
         

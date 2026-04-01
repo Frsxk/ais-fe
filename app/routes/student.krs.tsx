@@ -2,34 +2,16 @@ import type { Route } from "./+types/student.krs";
 import { PageHeader } from "../components/ui/PageHeader";
 import { GlassCard } from "../components/ui/GlassCard";
 import { useState } from "react";
-import { Check, Plus, AlertTriangle, Lock, Users, X } from "lucide-react";
+import { Check, Plus, AlertTriangle, Lock, Users, X, CalendarX } from "lucide-react";
+import {
+  AVAILABLE_COURSES, MAX_CREDITS,
+  formatSlot, findConflict,
+  type CourseData,
+} from "../data/courses";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Course Registration (KRS) - AIS-NG" }];
 }
-
-const MAX_CREDITS = 24;
-
-interface CourseData {
-  id: string;
-  name: string;
-  credits: number;
-  lecturer: string;
-  schedule: string;
-  capacity: number;
-  enrolled: number;
-}
-
-const AVAILABLE_COURSES: CourseData[] = [
-  { id: "CS301", name: "Data Structures", credits: 3, lecturer: "Dr. Anwar", schedule: "Mon 08:00", capacity: 45, enrolled: 38 },
-  { id: "CS302", name: "Web Programming", credits: 3, lecturer: "Prof. Sarah", schedule: "Tue 10:00", capacity: 40, enrolled: 40 },
-  { id: "CS303", name: "Database Systems", credits: 4, lecturer: "Dr. Budi", schedule: "Wed 13:00", capacity: 50, enrolled: 47 },
-  { id: "CS304", name: "Artificial Intelligence", credits: 3, lecturer: "Prof. Rian", schedule: "Thu 09:00", capacity: 35, enrolled: 20 },
-  { id: "CS305", name: "Computer Networks", credits: 3, lecturer: "Dr. Dewi", schedule: "Fri 08:00", capacity: 40, enrolled: 33 },
-  { id: "CS306", name: "Operating Systems", credits: 4, lecturer: "Prof. Hadi", schedule: "Mon 13:00", capacity: 45, enrolled: 42 },
-  { id: "CS307", name: "Software Engineering", credits: 3, lecturer: "Dr. Lina", schedule: "Wed 08:00", capacity: 50, enrolled: 50 },
-  { id: "CS308", name: "Mobile Development", credits: 3, lecturer: "Prof. Rudi", schedule: "Thu 13:00", capacity: 35, enrolled: 12 },
-];
 
 export default function StudentKRS() {
   const [selected, setSelected] = useState<string[]>([]);
@@ -44,11 +26,10 @@ export default function StudentKRS() {
 
   const showToast = (message: string, type: "error" | "warning") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 4000);
   };
 
   const toggleEnroll = (course: CourseData) => {
-    // Deselecting is always allowed
     if (selected.includes(course.id)) {
       setSelected(prev => prev.filter(c => c !== course.id));
       return;
@@ -60,7 +41,19 @@ export default function StudentKRS() {
       return;
     }
 
-    // Block: would exceed credit limit
+    // Block: schedule conflict
+    const conflict = findConflict(course, selected, AVAILABLE_COURSES);
+    if (conflict) {
+      const candidateTime = formatSlot(conflict.candidateSlot);
+      const conflictTime = formatSlot(conflict.conflictSlot);
+      showToast(
+        `Schedule conflict: "${course.name}" (${candidateTime}) overlaps with "${conflict.conflictCourse.name}" (${conflictTime}).`,
+        "error"
+      );
+      return;
+    }
+
+    // Block: credit limit exceeded
     if (totalCredits + course.credits > MAX_CREDITS) {
       showToast(`Adding ${course.name} (${course.credits} SKS) would exceed the ${MAX_CREDITS} credit limit. You have ${remainingCredits} credits remaining.`, "error");
       return;
@@ -70,10 +63,17 @@ export default function StudentKRS() {
   };
 
   const getCourseStatus = (course: CourseData) => {
-    if (course.enrolled >= course.capacity) return "full";
-    if (!selected.includes(course.id) && totalCredits + course.credits > MAX_CREDITS) return "over-limit";
-    return "available";
+    if (course.enrolled >= course.capacity) return "full" as const;
+    if (!selected.includes(course.id)) {
+      const conflict = findConflict(course, selected, AVAILABLE_COURSES);
+      if (conflict) return "conflict" as const;
+      if (totalCredits + course.credits > MAX_CREDITS) return "over-limit" as const;
+    }
+    return "available" as const;
   };
+
+  const formatScheduleLabel = (course: CourseData) =>
+    course.schedule.map(s => formatSlot(s)).join(", ");
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -109,8 +109,9 @@ export default function StudentKRS() {
               const isSelected = selected.includes(course.id);
               const status = getCourseStatus(course);
               const isFull = status === "full";
+              const isConflict = status === "conflict";
               const isOverLimit = status === "over-limit";
-              const isDisabled = isFull || isOverLimit;
+              const isDisabled = isFull || isConflict || isOverLimit;
 
               return (
                 <div
@@ -120,19 +121,26 @@ export default function StudentKRS() {
                       ? "bg-indigo-50/80 border-indigo-200 shadow-md shadow-indigo-100/50 cursor-pointer"
                       : isFull
                         ? "bg-slate-50/50 border-slate-200/40 opacity-60 cursor-not-allowed"
-                        : isOverLimit
-                          ? "bg-amber-50/30 border-amber-200/40 opacity-70 cursor-not-allowed"
-                          : "bg-white/70 border-slate-200/60 hover:border-indigo-300/50 hover:shadow-md cursor-pointer"
+                        : isConflict
+                          ? "bg-rose-50/30 border-rose-200/40 opacity-70 cursor-not-allowed"
+                          : isOverLimit
+                            ? "bg-amber-50/30 border-amber-200/40 opacity-70 cursor-not-allowed"
+                            : "bg-white/70 border-slate-200/60 hover:border-indigo-300/50 hover:shadow-md cursor-pointer"
                   }`}
                   onClick={() => toggleEnroll(course)}
                 >
-                  {/* Full / Over-limit badge */}
+
                   {isFull && (
                     <div className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
                       <Lock size={10} /> FULL
                     </div>
                   )}
-                  {isOverLimit && !isFull && (
+                  {isConflict && !isFull && (
+                    <div className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                      <CalendarX size={10} /> CONFLICT
+                    </div>
+                  )}
+                  {isOverLimit && !isFull && !isConflict && (
                     <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
                       <AlertTriangle size={10} /> EXCEEDS
                     </div>
@@ -157,7 +165,8 @@ export default function StudentKRS() {
                   <h4 className={`font-bold text-lg mb-1 leading-tight ${isFull ? "text-slate-500 line-through" : "text-slate-800"}`}>
                     {course.name}
                   </h4>
-                  <p className="text-sm text-slate-500 mb-3">{course.lecturer} • {course.schedule}</p>
+                  <p className="text-sm text-slate-500 mb-1">{course.lecturer} • {course.room}</p>
+                  <p className="text-xs text-slate-400 mb-3">{formatScheduleLabel(course)}</p>
 
                   <div className="flex items-center gap-2">
                     <div className="flex bg-white/50 w-fit px-3 py-1 rounded-full text-sm font-semibold text-slate-600 border border-slate-100">
@@ -173,6 +182,17 @@ export default function StudentKRS() {
                       <Users size={12} /> {course.enrolled}/{course.capacity}
                     </div>
                   </div>
+
+                  {isConflict && !isSelected && (() => {
+                    const conflict = findConflict(course, selected, AVAILABLE_COURSES);
+                    if (!conflict) return null;
+                    return (
+                      <p className="text-xs text-rose-500 mt-3 flex items-center gap-1 font-medium">
+                        <CalendarX size={12} className="shrink-0" />
+                        Overlaps with {conflict.conflictCourse.name} ({formatSlot(conflict.conflictSlot)})
+                      </p>
+                    );
+                  })()}
                 </div>
               );
             })}
