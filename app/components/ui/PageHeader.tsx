@@ -1,13 +1,14 @@
-import { Bell, User } from "lucide-react";
+import { User } from "lucide-react";
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   userName?: string;
   role?: string;
+  action?: React.ReactNode;
 }
 
-export function PageHeader({ title, subtitle, userName = "User", role = "Student" }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, userName = "User", role = "Student", action }: PageHeaderProps) {
   return (
     <header className="flex justify-between items-center mb-8">
       <div>
@@ -16,11 +17,7 @@ export function PageHeader({ title, subtitle, userName = "User", role = "Student
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="p-2.5 rounded-full bg-white/50 hover:bg-white text-slate-600 transition-all border border-slate-200/50 shadow-sm relative">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-        </button>
-
+        {action}
         <div className="flex items-center gap-3 px-2 py-1.5 rounded-full bg-white/40 border border-slate-200/50 shadow-sm pr-4">
           <div className="bg-indigo-100 text-indigo-600 p-2 rounded-full">
             <User size={18} />

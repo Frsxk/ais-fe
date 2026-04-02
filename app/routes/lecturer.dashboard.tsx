@@ -1,29 +1,111 @@
 import type { Route } from "./+types/lecturer.dashboard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { GlassCard } from "../components/ui/GlassCard";
-import { Users, FileText, CheckCircle, Clock } from "lucide-react";
+import { Users, FileText, Calendar as CalIcon, Loader2 } from "lucide-react";
+import { useAuth } from "../lib/auth";
+import { api } from "../lib/api";
+import { useState, useEffect } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Lecturer Dashboard - AIS-NG" }];
 }
 
+interface CourseFromAPI {
+  id: number;
+  code: string;
+  name: string;
+  creditWeight: number;
+  quota: number;
+  lecturerId: number;
+}
+
+interface ScheduleFromAPI {
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface TodayClass {
+  courseName: string;
+  courseCode: string;
+  startTime: string;
+  endTime: string;
+}
+
+const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
 export default function LecturerDashboard() {
+  const { user } = useAuth();
+  const [myCourses, setMyCourses] = useState<CourseFromAPI[]>([]);
+  const [todayClasses, setTodayClasses] = useState<TodayClass[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        const allCourses = await api.get<CourseFromAPI[]>("/courses");
+        const owned = allCourses.filter(c => c.lecturerId === user?.id);
+        setMyCourses(owned);
+
+        const today = DAY_NAMES[new Date().getDay()];
+        const classes: TodayClass[] = [];
+        let studentCount = 0;
+
+        await Promise.all(
+          owned.map(async (c) => {
+            try {
+              const schedules = await api.get<ScheduleFromAPI[]>(`/schedules/course/${c.id}`);
+              schedules
+                .filter(s => s.dayOfWeek === today)
+                .forEach(s => classes.push({
+                  courseName: c.name,
+                  courseCode: c.code,
+                  startTime: s.startTime,
+                  endTime: s.endTime,
+                }));
+            } catch { /* skip */ }
+
+            try {
+              const students = await api.get<unknown[]>(`/enrollments/course/${c.id}`);
+              studentCount += students.length;
+            } catch { /* skip */ }
+          })
+        );
+
+        classes.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        setTodayClasses(classes);
+        setTotalStudents(studentCount);
+      } catch { /* empty */ }
+      setLoading(false);
+    }
+    loadDashboard();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in duration-500">
-      <PageHeader 
-        title="Lecturer Dashboard" 
+      <PageHeader
+        title="Lecturer Dashboard"
         subtitle="Manage your courses and students"
-        userName="Dr. Anwar"
+        userName={user?.name || user?.email || ""}
         role="Lecturer"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <GlassCard className="flex flex-col gap-2 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-slate-500 font-medium text-sm">Active Courses</h3>
             <div className="bg-indigo-100 text-indigo-600 p-2 rounded-xl"><FileText size={18} /></div>
           </div>
-          <span className="text-3xl font-bold text-slate-800">4</span>
+          <span className="text-3xl font-bold text-slate-800">{myCourses.length}</span>
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-2 p-5">
@@ -31,82 +113,36 @@ export default function LecturerDashboard() {
             <h3 className="text-slate-500 font-medium text-sm">Total Students</h3>
             <div className="bg-sky-100 text-sky-600 p-2 rounded-xl"><Users size={18} /></div>
           </div>
-          <span className="text-3xl font-bold text-slate-800">142</span>
+          <span className="text-3xl font-bold text-slate-800">{totalStudents}</span>
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-2 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-slate-500 font-medium text-sm">Pending Grades</h3>
-            <div className="bg-amber-100 text-amber-600 p-2 rounded-xl"><Clock size={18} /></div>
+            <h3 className="text-slate-500 font-medium text-sm">Today's Classes</h3>
+            <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl"><CalIcon size={18} /></div>
           </div>
-          <span className="text-3xl font-bold text-slate-800">12</span>
-        </GlassCard>
-
-        <GlassCard className="flex flex-col gap-2 p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-slate-500 font-medium text-sm">Advising Requests</h3>
-            <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl"><CheckCircle size={18} /></div>
-          </div>
-          <span className="text-3xl font-bold text-slate-800">5</span>
+          <span className="text-3xl font-bold text-slate-800">{todayClasses.length}</span>
         </GlassCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <GlassCard>
-            <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Today's Classes</h3>
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white/50 border border-slate-200/50 flex justify-between items-center hover:bg-white/70 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex flex-col items-center justify-center font-bold">
-                    <span className="text-xs">08:00</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800">Data Structures (CS301)</h4>
-                    <p className="text-sm text-slate-500">Lab A1 • 45 Students</p>
-                  </div>
-                </div>
-                <button className="px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-lg text-sm hover:bg-indigo-100 transition-colors">View Roster</button>
+      <GlassCard>
+        <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Today's Classes</h3>
+        <div className="space-y-4">
+          {todayClasses.length > 0 ? todayClasses.map(cls => (
+            <div key={`${cls.courseCode}-${cls.startTime}`} className="p-4 rounded-xl bg-white/50 border border-slate-200/50 flex items-center gap-4 hover:bg-white/70 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex flex-col items-center justify-center font-bold">
+                <span className="text-xs">{cls.startTime.slice(0, 5)}</span>
               </div>
-
-              <div className="p-4 rounded-xl bg-white/50 border border-slate-200/50 flex justify-between items-center hover:bg-white/70 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex flex-col items-center justify-center font-bold">
-                    <span className="text-xs">14:00</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800">Advanced Algorithms</h4>
-                    <p className="text-sm text-slate-500">Room 302 • 30 Students</p>
-                  </div>
-                </div>
-                <button className="px-4 py-2 bg-slate-100 text-slate-600 font-semibold rounded-lg text-sm hover:bg-slate-200 transition-colors">View Roster</button>
+              <div>
+                <h4 className="font-bold text-slate-800">{cls.courseName} ({cls.courseCode})</h4>
+                <p className="text-sm text-slate-500">{cls.startTime.slice(0, 5)}–{cls.endTime.slice(0, 5)}</p>
               </div>
             </div>
-          </GlassCard>
+          )) : (
+            <p className="text-sm text-slate-400 text-center py-4">No classes scheduled for today.</p>
+          )}
         </div>
-
-        <div className="lg:col-span-1">
-          <GlassCard>
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Pending Tasks</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="mt-0.5 text-amber-500"><Clock size={16} /></div>
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-800">Grade Midterm Exams</h4>
-                  <p className="text-xs text-slate-500">Data Structures • Due in 2 days</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="mt-0.5 text-emerald-500"><CheckCircle size={16} /></div>
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-800">Approve KRS</h4>
-                  <p className="text-xs text-slate-500">5 advisees waiting for approval</p>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }
