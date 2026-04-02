@@ -4,7 +4,7 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { useState, useEffect, useCallback } from "react";
-import { Check, Plus, AlertTriangle, Lock, Users, X, Loader2 } from "lucide-react";
+import { Check, Plus, AlertTriangle, Users, X, Loader2 } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Course Registration (KRS) - AIS-NG" }];
