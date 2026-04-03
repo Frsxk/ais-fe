@@ -188,7 +188,7 @@ export default function LecturerGrading() {
               </button>
             </div>
 
-            <div className="grid grid-cols-[1fr_120px_48px] gap-3 mb-3 px-1">
+            <div className="hidden sm:grid grid-cols-[1fr_120px_48px] gap-3 mb-3 px-1">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Component Name</span>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wide text-center">Weight (%)</span>
               <span />
@@ -196,7 +196,7 @@ export default function LecturerGrading() {
 
             <div className="space-y-3">
               {components.map((comp, index) => (
-                <div key={comp.id ?? `new-${index}`} className="grid grid-cols-[1fr_120px_48px] gap-3 items-center p-3 rounded-xl bg-white/50 border border-slate-100 hover:border-slate-200 transition-colors">
+                <div key={comp.id ?? `new-${index}`} className="flex flex-col sm:grid sm:grid-cols-[1fr_120px_48px] gap-3 sm:items-center p-3 rounded-xl bg-white/50 border border-slate-100 hover:border-slate-200 transition-colors">
                   <input
                     type="text"
                     value={comp.name}

@@ -29,6 +29,7 @@ interface Schedule {
 interface EnrolledStudent {
   enrollmentId: number;
   studentId: number;
+  studentName: string;
   studentEmail: string;
   enrolledAt: string;
 }
@@ -211,7 +212,7 @@ export default function CourseDetails() {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200/80">
-                    <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Student Email</th>
+                    <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Student</th>
                     <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Enrolled At</th>
                     <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                   </tr>
@@ -219,7 +220,10 @@ export default function CourseDetails() {
                 <tbody className="divide-y divide-slate-100">
                   {students.map(st => (
                     <tr key={st.enrollmentId} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 font-medium text-slate-800">{st.studentEmail}</td>
+                      <td className="py-4">
+                        <p className="font-semibold text-slate-800">{st.studentName}</p>
+                        <p className="text-xs text-slate-400 hidden sm:block">{st.studentEmail}</p>
+                      </td>
                       <td className="py-4 text-slate-500">{new Date(st.enrolledAt).toLocaleDateString()}</td>
                       <td className="py-4 text-right">
                         <Link

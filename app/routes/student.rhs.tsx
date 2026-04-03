@@ -67,7 +67,8 @@ function SemesterBlock({ record }: { record: SemesterFromAPI }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-slate-100 overflow-x-auto">
+          <div className="min-w-[480px]">
           <div className="grid grid-cols-[1fr_60px_80px_80px] gap-2 px-6 py-3 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-wide">
             <span>Course</span>
             <span className="text-center">Credits</span>
@@ -89,6 +90,7 @@ function SemesterBlock({ record }: { record: SemesterFromAPI }) {
               <span className="text-sm text-slate-600 font-medium text-center tabular-nums">{course.finalScore.toFixed(1)}</span>
             </div>
           ))}
+        </div>
         </div>
       )}
     </GlassCard>

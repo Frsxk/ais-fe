@@ -38,6 +38,7 @@ export default function StudentGrade() {
   const { user } = useAuth();
 
   const [course, setCourse] = useState<Course | null>(null);
+  const [studentName, setStudentName] = useState<string>("");
   const [components, setComponents] = useState<Component[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,13 +53,19 @@ export default function StudentGrade() {
 
   const loadData = useCallback(async () => {
     try {
-      const [cData, compData, scoreData] = await Promise.all([
+      const [cData, compData, scoreData, enrollments] = await Promise.all([
         api.get<Course>(`/courses/${cid}`),
         api.get<Component[]>(`/grades/components/${cid}`),
         api.get<ScoreRecord[]>(`/grades/scores/${cid}`),
+        api.get<any[]>(`/enrollments/course/${cid}`),
       ]);
       setCourse(cData);
       setComponents(compData);
+      
+      const currentEnrollment = enrollments.find(e => e.enrollmentId === eid);
+      if (currentEnrollment) {
+        setStudentName(currentEnrollment.studentName || currentEnrollment.studentEmail);
+      }
       
       const newScores: Record<number, string> = {};
       scoreData.filter(s => s.enrollmentId === eid).forEach(s => {
@@ -139,8 +146,8 @@ export default function StudentGrade() {
   return (
     <div className="animate-in fade-in duration-500">
       <PageHeader
-        title="Grade Student"
-        subtitle={`Course: ${course.name} • ${course.code}`}
+        title={`Grading: ${studentName || "Student"}`}
+        subtitle={`${course.name} (${course.code})`}
         userName={user?.name || user?.email || ""}
         role="Lecturer"
       />

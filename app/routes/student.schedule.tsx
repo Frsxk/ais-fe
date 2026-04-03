@@ -2,8 +2,8 @@ import type { Route } from "./+types/student.schedule";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { useState, useEffect } from "react";
-import { BookMarked, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { BookMarked, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Schedule - AIS-NG" }];
@@ -36,6 +36,9 @@ const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"] as const;
 const DAY_LABELS: Record<string, string> = {
   monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri",
 };
+const DAY_FULL_LABELS: Record<string, string> = {
+  monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday",
+};
 const START_HOUR = 7;
 const END_HOUR = 18;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
@@ -62,6 +65,13 @@ function formatTime(time: string): string {
   return time.slice(0, 5);
 }
 
+function getTodayIndex(): number {
+  const jsDay = new Date().getDay();
+  if (jsDay >= 1 && jsDay <= 5) return jsDay - 1;
+  return 0;
+}
+
+// Desktop calendar time block
 function TimeBlock({ block }: { block: CalendarBlock }) {
   const color = COURSE_COLORS[block.colorIndex % COURSE_COLORS.length];
   const startDec = timeToDecimal(block.startTime);
@@ -90,11 +100,32 @@ function TimeBlock({ block }: { block: CalendarBlock }) {
   );
 }
 
+// Mobile day-by-day list item
+function MobileBlockCard({ block }: { block: CalendarBlock }) {
+  const color = COURSE_COLORS[block.colorIndex % COURSE_COLORS.length];
+  return (
+    <div className={`flex items-center gap-4 p-4 rounded-xl border ${color.bg} ${color.border}`}>
+      <div className="flex flex-col items-center shrink-0 w-14">
+        <span className={`text-sm font-bold ${color.text}`}>{formatTime(block.startTime)}</span>
+        <span className={`text-[10px] ${color.text} opacity-60`}>to</span>
+        <span className={`text-sm font-bold ${color.text}`}>{formatTime(block.endTime)}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`text-sm font-bold ${color.text} truncate`}>{block.courseName}</p>
+        <p className={`text-xs ${color.text} opacity-60 flex items-center gap-1 mt-0.5`}>
+          <BookMarked size={10} className="shrink-0" /> {block.courseCode}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function StudentSchedule() {
   const { user } = useAuth();
   const [blocks, setBlocks] = useState<CalendarBlock[]>([]);
   const [courseNames, setCourseNames] = useState<Map<string, { name: string; index: number }>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(getTodayIndex);
 
   useEffect(() => {
     async function loadSchedule() {
@@ -129,6 +160,14 @@ export default function StudentSchedule() {
     loadSchedule();
   }, []);
 
+  const selectedDay = DAYS[selectedDayIndex];
+  const dayBlocks = useMemo(
+    () => blocks
+      .filter(b => b.dayOfWeek === selectedDay)
+      .sort((a, b) => timeToDecimal(a.startTime) - timeToDecimal(b.startTime)),
+    [blocks, selectedDay]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -146,7 +185,55 @@ export default function StudentSchedule() {
         role="Student"
       />
 
-      <div className="glass-panel rounded-2xl p-4 overflow-x-auto">
+      {/* Mobile: day-by-day list view */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between mb-4 glass-panel rounded-xl px-2 py-2">
+          <button
+            onClick={() => setSelectedDayIndex(i => (i - 1 + DAYS.length) % DAYS.length)}
+            className="p-2 rounded-lg hover:bg-slate-100/60 text-slate-500 transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex gap-1">
+            {DAYS.map((day, i) => (
+              <button
+                key={day}
+                onClick={() => setSelectedDayIndex(i)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  i === selectedDayIndex
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-100/60"
+                }`}
+              >
+                {DAY_LABELS[day]}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedDayIndex(i => (i + 1) % DAYS.length)}
+            className="p-2 rounded-lg hover:bg-slate-100/60 text-slate-500 transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        <h3 className="text-lg font-bold text-slate-800 mb-3">{DAY_FULL_LABELS[selectedDay]}</h3>
+
+        {dayBlocks.length === 0 ? (
+          <div className="glass-panel rounded-xl p-8 text-center text-slate-400 text-sm">
+            No classes scheduled for {DAY_FULL_LABELS[selectedDay]}.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {dayBlocks.map(block => (
+              <MobileBlockCard key={`${block.courseCode}-${block.startTime}`} block={block} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: weekly calendar grid */}
+      <div className="hidden lg:block glass-panel rounded-2xl p-4 overflow-x-auto">
         <div className="min-w-[700px]">
           <div className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-slate-200/60 pb-3 mb-0">
             <div />
